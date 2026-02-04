@@ -1,6 +1,7 @@
 import numpy as np
 import os
 import cv2
+from skimage.feature import local_binary_pattern
 
 def color_histogram(im, bins_per_channel=8):
 	''' Computes a joint color histogram.
@@ -27,7 +28,7 @@ def color_histogram(im, bins_per_channel=8):
 	histogram = histogram / np.linalg.norm(histogram, ord=1)
 	return histogram
 
-def calculate_color_histogram_all(path_file_label,path_file_images):
+def calculate_color_histogram_all(path_file_label, path_file_images, func_histogram, **kwargs):
 	
 	labels = {} # dict of labels
 	X = [] # histogram
@@ -47,8 +48,10 @@ def calculate_color_histogram_all(path_file_label,path_file_images):
 		if im is None:
 			raise FileNotFoundError(f"Could not read image: {image_path}") 
 
-		im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
-		hist = color_histogram(im, 8)
+		if func_histogram.__name__ == 'color_histogram':
+			im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
+		
+		hist = func_histogram(im, **kwargs)
 
 		X.append(hist)
 		y.append(label)
@@ -57,3 +60,39 @@ def calculate_color_histogram_all(path_file_label,path_file_images):
 	y = np.array(y)
 
 	return X, y
+
+def lbp_histogram(im, P=8, R=1, method='uniform'):
+    """
+    Computes LBP histogram for a single image.
+
+    Parameters:
+    -----------
+    im : numpy array, shape (H, W, 3)
+        Color image (RGB).
+    P : int
+        Number of points for LBP.
+    R : int
+        Radius for LBP.
+    method : str
+        LBP method ('uniform' is standard).
+
+    Returns:
+    --------
+    hist : numpy array, shape (P*(P-1)+3,)
+        Normalized LBP histogram
+    """
+    # 1. Convert to grayscale
+    gray = cv2.cvtColor(im, cv2.COLOR_RGB2GRAY)
+
+    # 2. Compute LBP image
+    lbp = local_binary_pattern(gray, P, R, method=method)
+
+    # 3. Compute histogram of LBP codes
+    n_bins = int(lbp.max() + 1)  # number of unique LBP codes
+    hist, _ = np.histogram(lbp.ravel(), bins=n_bins, range=(0, n_bins))
+
+    # Normalize histogram
+    hist = hist.astype(np.float32)
+    hist /= hist.sum()
+
+    return hist
