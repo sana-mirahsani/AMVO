@@ -1,4 +1,6 @@
 import numpy as np
+import os
+import cv2
 
 def color_histogram(im, bins_per_channel=8):
 	''' Computes a joint color histogram.
@@ -24,3 +26,34 @@ def color_histogram(im, bins_per_channel=8):
 	histogram[colors] = counts
 	histogram = histogram / np.linalg.norm(histogram, ord=1)
 	return histogram
+
+def calculate_color_histogram_all(path_file_label,path_file_images):
+	
+	labels = {} # dict of labels
+	X = [] # histogram
+	y = [] # labels
+
+	with open(path_file_label, "r") as f:
+		for line in f:
+			image_name, label = line.strip().split()
+			image_name = image_name.split('/')[1]
+			labels[image_name] = label
+
+
+	for image_name, label in labels.items():
+		image_path = os.path.join(path_file_images, image_name)
+
+		im = cv2.imread(image_path)
+		if im is None:
+			raise FileNotFoundError(f"Could not read image: {image_path}") 
+
+		im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
+		hist = color_histogram(im, 8)
+
+		X.append(hist)
+		y.append(label)
+
+	X = np.array(X)
+	y = np.array(y)
+
+	return X, y
