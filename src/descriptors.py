@@ -47,7 +47,7 @@ def calculate_color_histogram_all(path_file_label, path_file_images, func_histog
 		if im is None:
 			raise FileNotFoundError(f"Could not read image: {image_path}") 
 
-		if func_histogram.__name__ == 'color_histogram':
+		if func_histogram.__name__ == 'color_histogram' or func_histogram.__name__ == 'geometric_segmentation_of_images':
 			im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
 		
 		hist = func_histogram(im, **kwargs)
@@ -99,3 +99,34 @@ def lbp_histogram(im, P=8, R=1, method='uniform'):
 def merging_descriptors(X_desc1, X_desc2):
 	X_fused = np.hstack((X_desc1, X_desc2))
 	return X_fused
+
+def geometric_segmentation_of_images(img, grid, bins):
+	# calculate histogram for ONE image
+	H, W = img.shape[:2]
+
+	h_step = H // grid
+	w_step = W // grid
+
+	# cut image in regions
+	regions = [
+		img[i*h_step:(i+1)*h_step, j*w_step:(j+1)*w_step]
+		for i in range(grid)
+		for j in range(grid)
+	]
+
+	# calculate the histogram for all regions
+	features = []
+
+	# convert list to array
+	regions_array = np.array(regions)
+
+	# regions_array has shape (25, region_h, region_w, 3)
+	for region in regions_array:
+		# descriptor
+		h = color_histogram(region, bins)  
+		features.append(h)
+
+	# Final feature vector for this image
+	final_descriptor = np.concatenate(features)
+
+	return final_descriptor
