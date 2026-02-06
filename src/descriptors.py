@@ -33,14 +33,13 @@ def calculate_color_histogram_all(path_file_label, path_file_images, func_histog
 	labels = {} # dict of labels
 	X = [] # histogram
 	y = [] # labels
-
+	
 	with open(path_file_label, "r") as f:
 		for line in f:
 			image_name, label = line.strip().split()
 			image_name = image_name.split('/')[1]
 			labels[image_name] = label
-
-
+	
 	for image_name, label in labels.items():
 		image_path = os.path.join(path_file_images, image_name)
 
@@ -81,13 +80,13 @@ def lbp_histogram(im, P=8, R=1, method='uniform'):
     hist : numpy array, shape (P*(P-1)+3,)
         Normalized LBP histogram
     """
-    # 1. Convert to grayscale
+    # Convert to grayscale
     gray = cv2.cvtColor(im, cv2.COLOR_RGB2GRAY)
 
-    # 2. Compute LBP image
+    # Compute LBP image
     lbp = local_binary_pattern(gray, P, R, method=method)
 
-    # 3. Compute histogram of LBP codes
+    # Compute histogram of LBP codes
     n_bins = int(lbp.max() + 1)  # number of unique LBP codes
     hist, _ = np.histogram(lbp.ravel(), bins=n_bins, range=(0, n_bins))
 
@@ -96,3 +95,7 @@ def lbp_histogram(im, P=8, R=1, method='uniform'):
     hist /= hist.sum()
 
     return hist
+
+def merging_descriptors(X_desc1, X_desc2):
+	X_fused = np.hstack((X_desc1, X_desc2))
+	return X_fused
